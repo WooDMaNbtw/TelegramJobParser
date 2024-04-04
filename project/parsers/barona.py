@@ -14,7 +14,6 @@ class Barona(ParserBase):
     def parse(self, keyword=None, location=None) -> None:
         self.orm.clear_old_records(table=Barona.__name__)
         total_pages = self.get_total_pages()
-        count = 1
         for page in range(1, total_pages + 1):
             response = requests.get(
                 url=self.url,
@@ -39,7 +38,6 @@ class Barona(ParserBase):
                 deadline = date_parser.isoparse(vacancy.get('validThrough')).date()
                 locations = vacancy.get('location')
 
-
                 self.orm.save_vacancy(
                     table=Barona.__name__,
                     posted_at=posted,
@@ -51,8 +49,6 @@ class Barona(ParserBase):
                     employment_types=employment_types,
                     language=language
                 )
-
-                count += 1
 
     def get_total_pages(self) -> int:
         response = requests.get(
