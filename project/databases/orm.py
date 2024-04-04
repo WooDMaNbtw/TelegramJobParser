@@ -16,10 +16,10 @@ class ORM:
         self.conn = sq.connect(path)
         self.cursor = self.conn.cursor()
 
-    async def show_data(self, table):
+    def show_data(self, table):
         self.cursor.execute(f'SELECT * FROM {table}')
 
-    async def create_tables(self):
+    def create_tables(self):
         tables_name = ('Barona', 'Eezy', 'Oikotie')
         fields = (
             '''
@@ -43,7 +43,7 @@ class ORM:
 
         return 1
 
-    async def save_vacancy(self, table: str,
+    def save_vacancy(self, table: str,
                      title: str,
                      posted_at: datetime.date = None,
                      slug: str = None,
@@ -82,6 +82,6 @@ class ORM:
         print(table + ": " + title + ' - ' + link)
         time.sleep(0.1)
 
-    async def clear_old_records(self, table):
+    def clear_old_records(self, table):
         self.cursor.execute(f'DELETE FROM {table} WHERE deadline < (?)', (datetime.date.today(), ))
         self.conn.commit()
