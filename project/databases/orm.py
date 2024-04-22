@@ -1,7 +1,8 @@
 import json
 import sqlite3 as sq
 import datetime
-import time
+
+temp_vacancies = {}
 
 
 class ORM:
@@ -13,7 +14,7 @@ class ORM:
     }
 
     def __init__(self, path):
-        self.conn = sq.connect(path)
+        self.conn = sq.connect(path, check_same_thread=False)
         self.cursor = self.conn.cursor()
 
     def show_data(self, table):
@@ -58,10 +59,15 @@ class ORM:
         if len(rows) != 0:
             #  return False if vacacancy already exists in database
             return False
+        print(locations)
+        if locations is not None:
+            try:
+                locations = ", ".join([location["city"] for location in locations])
+            except TypeError:
+                locations = ", ".join(location for key, location in locations.items() if location is not None)
 
-        locations = json.dumps(locations)
         employment_types = json.dumps(employment_types)
-
+        description = description.replace('\n', '')
         link = self.links_attributes.get(table, None) + slug
         self.cursor.execute(
             f'INSERT INTO \
@@ -78,10 +84,23 @@ class ORM:
 
         #  sending to the telegram new vacancy
         #  ...
+        displayed_data = {
+            'service': table,
+            'title': title,
+            'link': link,
+            'locations': locations,
+            'description': description,
+            'language': language
+        }
 
-        print(table + ": " + title + ' - ' + link)
-        time.sleep(0.1)
+        temp_vacancies.update({slug: displayed_data})
+        return None
 
     def clear_old_records(self, table):
         self.cursor.execute(f'DELETE FROM {table} WHERE deadline < (?)', (datetime.date.today(), ))
         self.conn.commit()
+
+    @staticmethod
+    def save_temp_vacancies():
+        with open('new_temp_vacancies.json', 'w') as file:
+            json.dump(temp_vacancies, fp=file, indent=4, ensure_ascii=False)
