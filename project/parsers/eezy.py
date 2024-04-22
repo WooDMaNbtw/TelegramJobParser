@@ -27,10 +27,10 @@ class Eezy(ParserBase):
         except selenium.common.NoSuchElementException:
             pass
 
-    def parse_by_selenium(self, title='', location=''):
+    def parse_by_selenium(self, keyword='', location=''):
         driver: undetected_chromedriver.Chrome = self.get_driver()
 
-        driver.get(url=f"{self.url}?job={title}&location={location}")
+        driver.get(url=f"{self.url}?job={keyword}&location={location}")
 
         self.accept_cookies(driver=driver)
 
@@ -47,15 +47,35 @@ class Eezy(ParserBase):
         vacancies = content_block.find_elements(By.CLASS_NAME, 'css-7x9j97')
 
         for vacancy in vacancies:
-            link = vacancy.find_element(By.TAG_NAME, 'a').get_attribute('href').replace('https://tyopaikat.eezy.fi', '')
+            try:
+                link = vacancy.find_element(By.TAG_NAME, 'a').get_attribute('href')
+                slug = link.replace('https://tyopaikat.eezy.fi', '')
+            except Exception as ex:
+                link = None
+                slug = None
+
             title = vacancy.find_element(By.CLASS_NAME, 'css-x9gms1').text
-            industry = vacancy.find_element(By.CLASS_NAME, 'css-d0mjqo').text
-            location = vacancy.find_element(By.CLASS_NAME, 'css-1o7vf0g').text
+            description = self.get_description(driver=driver, link=link)
+
+            try:
+                location = vacancy.find_element(By.CLASS_NAME, 'css-1o7vf0g').text
+            except selenium.common.StaleElementReferenceException as ex:
+                print("location wasn't found")
 
             self.orm.save_vacancy(
                 table=Eezy.__name__,
-                slug=link,
+                slug=slug,
                 title=title,
-                description=industry,
+                description=description,
                 locations={"location": location}
             )
+
+    def get_description(self, driver: undetected_chromedriver.Chrome, link=str):
+        if link is None:
+            return ''
+
+        driver.get(link)
+
+        description = driver.find_element(By.CLASS_NAME, 'css-4cffwv').text
+
+        return description.strip()[:50] + "..."

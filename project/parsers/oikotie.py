@@ -1,9 +1,12 @@
 import requests
 import dateutil.parser as date_parser
 from databases.orm import ORM
+from selenium.webdriver.common.by import By
+
 from .base import ParserBase
 import undetected_chromedriver
 import time
+
 from bs4 import BeautifulSoup
 
 
@@ -13,7 +16,7 @@ class Oikotie(ParserBase):
         super().__init__()
         self.orm = ORM('databases/database.db')
 
-    def parse_by_selenium(self, keywords: list = '', location: str = '', is_remote: bool = False, industry: str = ''):
+    def parse_by_selenium(self, keyword: list = '', location: str = '', is_remote: bool = False, industry: str = ''):
 
         driver: undetected_chromedriver.Chrome = self.get_driver()
 
@@ -28,12 +31,12 @@ class Oikotie(ParserBase):
         if industry:
             industry = f'&toimiala={industry}'
 
-        if keywords:
-            keywords = f'&hakusana={",".join(keywords)}'
+        if keyword:
+            keyword = f'&hakusana={",".join(keyword)}'
 
         url = (
-           f'https://tyopaikat.oikotie.fi/tyopaikat{location}{remote_tag}?jarjestys=uusimmat{keywords}{industry}'
-               )
+           f'https://tyopaikat.oikotie.fi/tyopaikat{location}{remote_tag}?jarjestys=uusimmat{keyword}{industry}'
+       )
 
         driver.get(url=url)
         time.sleep(2)
@@ -46,7 +49,8 @@ class Oikotie(ParserBase):
 
             title = body.find('h2').text.strip()
             slug = body.find('a').get('href')
-            company = body.find('span', class_='employer').text.strip()
+            link = 'https://tyopaikat.oikotie.fi' + slug
+            description = self.get_description(driver=driver, link=link)
             try:
                 location = body.find('div', class_='locations').text.strip()
             except AttributeError as ex:
@@ -66,10 +70,16 @@ class Oikotie(ParserBase):
                 table=Oikotie.__name__,
                 title=title,
                 slug=slug,
-                description=company,
+                description=description,
                 locations={'locations': location},
                 employment_types={'employment_types': employment_types},
                 posted_at=published
             )
 
+    def get_description(self, driver: undetected_chromedriver.Chrome, link=str):
+        driver.get(link)
+
+        description = driver.find_element(By.CLASS_NAME, 'wysiwyg-container').text
+
+        return description.strip()[:50] + "..."
 
