@@ -5,39 +5,38 @@ from parsers.barona import Barona
 from parsers.eezy import Eezy
 from parsers.oikotie import Oikotie
 from databases.orm import ORM
-import json
-import undetected_chromedriver
-from bs4 import BeautifulSoup
-from selenium.webdriver import ChromeOptions
-import time
-from selenium.webdriver.common.by import By
-import random
-
-db = ORM('databases/database.db', )
 
 
-def parse_oikotie():
+db = ORM('databases/database.db')
+
+
+def parse_oikotie(keywords: list = '', location: str = '', is_remote: bool = False, industry: str = ''):
     oikotie = Oikotie()
-    oikotie.parse_by_selenium()
+    oikotie.parse_by_selenium(keywords=keywords, location=location, is_remote=is_remote, industry=industry)
 
 
-def parse_eezy():
+def parse_eezy(title='', location=''):
     eezy = Eezy()
-    eezy.parse_by_selenium()
+    eezy.parse_by_selenium(title=title, location=location)
 
 
-def parse_barona():
+def parse_barona(keyword=None, location=None):
     barona_parser = Barona()
-    barona_parser.parse()
+    barona_parser.parse(keyword=keyword, location=location)
 
 
-def main():
+def main(oikotie_keywords='', oikotie_location='', oikotie_is_remote=False, oikotie_industry='',
+         eezy_title='', eezy_location='',
+         barona_keyword=None, barona_location=None):
+    db.create_tables()
+
     start_time = datetime.datetime.now()
 
     # Создание и запуск потоков
-    oikotie_thread = threading.Thread(target=parse_oikotie)
-    eezy_thread = threading.Thread(target=parse_eezy)
-    barona_thread = threading.Thread(target=parse_barona)
+    oikotie_thread = threading.Thread(target=parse_oikotie,
+                                      args=(oikotie_keywords, oikotie_location, oikotie_is_remote, oikotie_industry))
+    eezy_thread = threading.Thread(target=parse_eezy, args=(eezy_title, eezy_location))
+    barona_thread = threading.Thread(target=parse_barona, args=(barona_keyword, barona_location))
 
     oikotie_thread.start()
     eezy_thread.start()
@@ -49,6 +48,7 @@ def main():
     barona_thread.join()
 
     end_time = datetime.datetime.now()
+    ORM.save_temp_vacancies()
 
     print("Overall time: ", end_time - start_time)
 
