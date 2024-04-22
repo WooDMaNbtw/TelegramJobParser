@@ -1,3 +1,4 @@
+import abc
 import os
 import platform
 import random
@@ -62,4 +63,11 @@ class ParserBase:
         )
 
         return driver
+
+    def get_description(self, driver: undetected_chromedriver.Chrome, link=str):
+        pass
+
+
+
+
 
