@@ -24,7 +24,7 @@ class ORM:
         tables_name = ('Barona', 'Eezy', 'Oikotie')
         fields = (
             '''
-            id INTEGER PRIMARY KEY,
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
             posted_at DATE,
             slug TEXT,
             title TEXT NOT NULL,
@@ -41,6 +41,16 @@ class ORM:
             self.cursor.execute(
                 f'''CREATE TABLE IF NOT EXISTS {table} ({fields})'''
             )
+
+        self.cursor.execute(
+            '''CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id TEXT,
+            barona_id INTEGER DEFAULT 0,
+            eezy_id INTEGER DEFAULT 0,
+            oikotie_id INTEGER DEFAULT 0,
+            )'''
+        )
 
         return 1
 
@@ -96,6 +106,36 @@ class ORM:
         temp_vacancies.update({slug: displayed_data})
         return None
 
+    def save_user(self, user_id):
+        rows = self.cursor.execute("SELECT * FROM users WHERE user_id = (?)", (user_id, )).fetchall()
+
+        if len(rows) != 0:
+            return
+
+        self.cursor.execute("INSERT INTO users (user_id) VALUES (?)", (user_id, ))
+
+    def update_user(self, user_id, barona_id=None, eezy_id=None, oikoie_id=None):
+        query = "UPDATE users SET "
+        sets = []
+
+        if barona_id is not None:
+            sets.append(f"barona_id = {barona_id}")
+
+        if eezy_id is not None:
+            sets.append(f"eezy_id = {eezy_id}")
+
+        if oikoie_id is not None:
+            sets.append(f"oikoie_id = {oikoie_id}")
+
+        if sets:
+            query += ", ".join(sets) + f" WHERE user_id = {user_id}"
+            self.cursor.execute(query)
+            self.conn.commit()
+            return True
+        else:
+            print("No fields to update provided.")
+            return False
+
     def clear_old_records(self, table):
         self.cursor.execute(f'DELETE FROM {table} WHERE deadline < (?)', (datetime.date.today(), ))
         self.conn.commit()
@@ -104,3 +144,21 @@ class ORM:
     def save_temp_vacancies():
         with open('new_temp_vacancies.json', 'w') as file:
             json.dump(temp_vacancies, fp=file, indent=4, ensure_ascii=False)
+
+    def get_relevant_records(self, user_id):
+        barona_last_viewed_record = self.cursor.execute("SELECT barona_id FROM users WHERE user_id = (?)", (user_id, )).fetchone()
+        eezy_last_viewed_record = self.cursor.execute("SELECT eezy_id FROM users WHERE user_id = (?)", (user_id, )).fetchone()
+        oikotie_last_viewed_record = self.cursor.execute("SELECT oikotie FROM users WHERE user_id = (?)", (user_id, )).fetchone()
+
+        barona_rows = self.cursor.execute("SELECT * FROM barona WHERE id >= (?)", (barona_last_viewed_record, )).fetchall()
+        eezy_rows = self.cursor.execute("SELECT * FROM eezy WHERE id >= (?)", (eezy_last_viewed_record, )).fetchall()
+        oikotie_rows = self.cursor.execute("SELECT * FROM oikotie WHERE id >= (?)", (oikotie_last_viewed_record, )).fetchall()
+
+        self.update_user(
+            user_id=user_id,
+            barona_id=barona_rows[-1][-1],
+            eezy_id=eezy_rows[-1][-1],
+            oikoie_id=oikotie_rows[-1][-1]
+        )
+
+        return barona_rows + eezy_rows + oikotie_rows
