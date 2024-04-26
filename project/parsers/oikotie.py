@@ -16,27 +16,19 @@ class Oikotie(ParserBase):
         super().__init__()
         self.orm = ORM('databases/database.db')
 
-    def parse_by_selenium(self, keyword: list = '', location: str = '', is_remote: bool = False, industry: str = ''):
+    def parse_by_selenium(self, keyword: list = '', location: str = ''):
 
         driver: undetected_chromedriver.Chrome = self.get_driver()
 
         if location:
             location = '/' + location
 
-        if is_remote:
-            remote_tag = '/etatyo'
-        else:
-            remote_tag = ''
-
-        if industry:
-            industry = f'&toimiala={industry}'
-
         if keyword:
             keyword = f'&hakusana={",".join(keyword)}'
 
         url = (
-           f'https://tyopaikat.oikotie.fi/tyopaikat{location}{remote_tag}?jarjestys=uusimmat{keyword}{industry}'
-       )
+           f'https://tyopaikat.oikotie.fi/tyopaikat{location}?jarjestys=uusimmat{keyword}'
+        )
 
         driver.get(url=url)
         time.sleep(2)
