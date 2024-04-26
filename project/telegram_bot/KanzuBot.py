@@ -12,78 +12,44 @@ bot = Bot(token=token)
 dp = Dispatcher()
 router = Router()
 
-SELECTED_OPTIONS = {
-    'management': {
-        'link': 'https://t.me/KanzuManagementBot',
-        'message': "Management"
-    },
-    'it specialist': {
-        'link': 'https://t.me/KaizenITBot',
-        'message': "IT specialist"
-    },
-    'design': {
-        'link': 'https://t.me/KaizenDesignBot',
-        'message': "Design"
-    },
-    'marketing': {
-        'link': 'https://t.me/KanzuMarketingBot',
-        'message': "Marketing"
-    },
-    'finance': {
-        'link': 'https://t.me/KanzuFinanceBot',
-        'message': "Finance"
-    },
-    'production': {
-        'link': 'https://t.me/KanzuProductionBot',
-        'message': "Production"
-    },
-    'education': {
-        'link': 'https://t.me/KanzuEducationBot',
-        'message': "Education"
-    },
-    'healthcare': {
-        'link': 'https://t.me/KanzuHealthcareBot',
-        'message': "Healthcare"
-    },
-    'sales': {
-        'link': 'https://t.me/KanzuSalesBot',
-        'message': "Sales"
-    },
-    'engineering': {
-        'link': 'https://t.me/KanzuEngineeringBot',
-        'message': "Engineering"
-    },
-    'research and development': {
-        'link': 'https://t.me/KanzuRnDBot',
-        'message': "Research and Development"
-    },
-    'legal': {
-        'link': 'https://t.me/KanzuLegalBot',
-        'message': "Legal"
-    }
-}
 
+@router.callback_query(F.data.startswith('job'))
+async def select_vacancy_type(clb: CallbackQuery) -> None:
+    keyword = clb.data.split(":")[1].lower()
+    print(keyword)
+    main(keyword=keyword)
 
-@router.message(F.text.lower().startswith('job'))
-async def select_vacancy_type(msg: Message) -> None:
-    selected_type = msg.text.split(":")[1].lower()
-    print(selected_type)
-    data_from_selected_type = SELECTED_OPTIONS[selected_type]
-    link = data_from_selected_type.get("link")
-    message = data_from_selected_type.get("message")
+    with open("new_temp_vacancies.json", 'r') as file:
+        vacancies: dict = json.load(fp=file)
 
-    builder = InlineKeyboardBuilder()
+    for slug, data in vacancies.items():
+        '''
+        data represents as a dictionary of key-values:
 
-    builder.row(InlineKeyboardButton(text="To vacancy", url=link))
+        service: name of the site (type - string)
+        title: title of the vacancy (type - string)
+        link: link to the vacancy (type - string)
+        locations: a list of locations (type - string, represented - City, City..) 
+        description: description of the vacancy (type - string)
+        language: language of the vacancy (type - string, default - fi)
+        '''
 
-    reply_message = (f"Please click a button below, you will be redirected "
-                     f"to the chosen bot concerning *{selected_type.upper()}*")
+        builder = InlineKeyboardBuilder()
 
-    await msg.answer(
-        text=reply_message,
-        parse_mode='MarkdownV2',
-        reply_markup=builder.as_markup()
-    )
+        builder.row(InlineKeyboardButton(text="To vacancy", url=data['link']))
+
+        message = (f"*{data['title']}*\n"
+                   f"|-🖥 Sourced: *{data['service']}*\n"
+                   f"|-🗺 {data['locations']}\n"
+                   f"|-🎙 language: {data['language'].upper()}\n"
+                   f"`{data['description']}`")
+
+        parsed_message = await reply_parse(message)
+        await clb.message.answer(
+            parsed_message,
+            parse_mode="MarkdownV2",
+            reply_markup=builder.as_markup()
+        )
 
 
 @router.message(Command('help'))
@@ -106,17 +72,7 @@ async def select_vacancies(msg: Message) -> None:
     types = ReplyKeyboardMarkup(
         keyboard=[
             [KeyboardButton(text="job:Management")],
-            [KeyboardButton(text="job:IT specialist")],
-            [KeyboardButton(text="job:Design")],
-            [KeyboardButton(text="job:Marketing")],
-            [KeyboardButton(text="job:Finance")],
-            [KeyboardButton(text="job:Production")],
-            [KeyboardButton(text="job:Education")],
-            [KeyboardButton(text="job:Healthcare")],
-            [KeyboardButton(text="job:Sales")],
-            [KeyboardButton(text="job:Engineering")],
-            [KeyboardButton(text="job:Research and Development")],
-            [KeyboardButton(text="job:Legal")],
+
         ],
         resize_keyboard=True,
     )
@@ -173,7 +129,7 @@ async def start(msg: Message) -> None:
 
     builder = InlineKeyboardBuilder()
 
-    builder.row(InlineKeyboardButton(text='Отслеживать новые вакансии', callback_data=f"show_vacancies"))
+    builder.row(InlineKeyboardButton(text='Please select the vacancies type', callback_data=f"show_vacancies"))
 
     await msg.answer(
         text="*Ohayo, watashi wa Kaizen bot desu*",
@@ -195,39 +151,23 @@ async def reply_parse(replied_message: str) -> str:
 
 @router.callback_query(F.data == 'show_vacancies')
 async def show_vacancy(clb: CallbackQuery) -> Message:
-    main()
-    with open("new_temp_vacancies.json", 'r') as file:
-        vacancies: dict = json.load(fp=file)
-    for slug, data in vacancies.items():
-        '''
-        data represents as a dictionary of key-values:
 
-        service: name of the site (type - string)
-        title: title of the vacancy (type - string)
-        link: link to the vacancy (type - string)
-        locations: a list of locations (type - string, represented - City, City..) 
-        description: description of the vacancy (type - string)
-        language: language of the vacancy (type - string, default - fi)
-        '''
+    builder = InlineKeyboardBuilder()
+    builder.row(InlineKeyboardButton(text="All", callback_data="job:"))
+    builder.row(InlineKeyboardButton(text="Management", callback_data="job:management"))
+    builder.row(InlineKeyboardButton(text="IT", callback_data="job:it specialist"))
+    builder.row(InlineKeyboardButton(text="Design", callback_data="job:design"))
+    builder.row(InlineKeyboardButton(text="Marketing", callback_data="job:marketing"))
+    builder.row(InlineKeyboardButton(text="Finance", callback_data="job:finance"))
+    builder.row(InlineKeyboardButton(text="Production", callback_data="job:production"))
+    builder.row(InlineKeyboardButton(text="Education", callback_data="job:education"))
+    builder.row(InlineKeyboardButton(text="Healthcare", callback_data="job:healthcare"))
+    builder.row(InlineKeyboardButton(text="Sales", callback_data="job:sales"))
+    builder.row(InlineKeyboardButton(text="Engineering", callback_data="job:engineering"))
+    builder.row(InlineKeyboardButton(text="Research and Development", callback_data="job:research and development"))
+    builder.row(InlineKeyboardButton(text="Legal", callback_data="job:legal"))
 
-        builder = InlineKeyboardBuilder()
-
-        builder.row(InlineKeyboardButton(text="To vacancy", url=data['link']))
-
-        message = (f"*{data['title']}*\n"
-                   f"|-🖥 Sourced: *{data['service']}*\n"
-                   f"|-🗺 {data['locations']}\n"
-                   f"|-🎙 language: {data['language'].upper()}\n"
-                   f"`{data['description']}`")
-
-        parsed_message = await reply_parse(message)
-        await clb.message.answer(
-            parsed_message,
-            parse_mode="MarkdownV2",
-            reply_markup=builder.as_markup()
-        )
-
-    return await clb.message.answer(text="In a current time, thats all")
+    return await clb.message.answer(text="Please select preferable vacancy type", reply_markup=builder.as_markup())
 
 
 async def main_starter():
