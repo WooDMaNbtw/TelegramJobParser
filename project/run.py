@@ -10,14 +10,14 @@ from databases.orm import ORM
 db = ORM('databases/database.db')
 
 
-def parse_oikotie(keywords: list = '', location: str = '', is_remote: bool = False, industry: str = ''):
+def parse_oikotie(keyword: list = '', location: str = ''):
     oikotie = Oikotie()
-    oikotie.parse_by_selenium(keywords=keywords, location=location, is_remote=is_remote, industry=industry)
+    oikotie.parse_by_selenium(keyword=keyword, location=location)
 
 
-def parse_eezy(title='', location=''):
+def parse_eezy(keyword='', location=''):
     eezy = Eezy()
-    eezy.parse_by_selenium(title=title, location=location)
+    eezy.parse_by_selenium(keyword=keyword, location=location)
 
 
 def parse_barona(keyword=None, location=None):
@@ -25,18 +25,17 @@ def parse_barona(keyword=None, location=None):
     barona_parser.parse(keyword=keyword, location=location)
 
 
-def main(oikotie_keywords='', oikotie_location='', oikotie_is_remote=False, oikotie_industry='',
-         eezy_title='', eezy_location='',
-         barona_keyword=None, barona_location=None):
+def main(keyword='', location=None):
+
     db.create_tables()
 
     start_time = datetime.datetime.now()
 
     # Создание и запуск потоков
     oikotie_thread = threading.Thread(target=parse_oikotie,
-                                      args=(oikotie_keywords, oikotie_location, oikotie_is_remote, oikotie_industry))
-    eezy_thread = threading.Thread(target=parse_eezy, args=(eezy_title, eezy_location))
-    barona_thread = threading.Thread(target=parse_barona, args=(barona_keyword, barona_location))
+                                      args=(keyword, location))
+    eezy_thread = threading.Thread(target=parse_eezy, args=(keyword, location))
+    barona_thread = threading.Thread(target=parse_barona, args=(keyword, location))
 
     oikotie_thread.start()
     eezy_thread.start()
