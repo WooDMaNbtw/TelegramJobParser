@@ -21,21 +21,23 @@ bot_production = Bot(token='6795556806:AAGKyNG7T7BM1m42WGnqUZgyKvSzigugR0c')
 bot_rad = Bot(token='6795556806:AAGKyNG7T7BM1m42WGnqUZgyKvSzigugR0c')
 bot_sales = Bot(token='6795556806:AAGKyNG7T7BM1m42WGnqUZgyKvSzigugR0c')
 
-from telegram_bot import KanzuBot
+from telegram_bot import KanzuBot, Bot
 
 
 async def runner() -> None:
     tasks = [
-        asyncio.create_task(KanzuBot.main_starter()),
+        # asyncio.create_task(KanzuBot.main_starter()),
+        asyncio.create_task(Bot.main_starter()),
     ]
 
     await asyncio.gather(*tasks)
 
     commands = [
-        BotCommand(command='/start', description='Начать'),
-        BotCommand(command='/help', description='Помощь'),
-        BotCommand(command='/settings', description='Настройки'),
-        BotCommand(command='/select_vacancies', description='Настройки')
+        BotCommand(command='/start', description='Menu'),
+        BotCommand(command='/help', description='Help'),
+        BotCommand(command='/info', description='info'),
+        BotCommand(command='/settings', description='Settings'),
+        # BotCommand(command='/select_vacancies', description='Настройки')
     ]
     await bot.set_my_commands(
         commands=commands
