@@ -118,9 +118,7 @@ async def set_lang_rus(clb: CallbackQuery):
         dialogues = file.readlines()
 
     """
-
         Продумать
-
     """
 
 
