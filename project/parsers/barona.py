@@ -15,13 +15,21 @@ class Barona(ParserBase):
         self.orm.clear_old_records(table=Barona.__name__)
         total_pages = self.get_total_pages()
         for page in range(1, total_pages + 1):
+
+            pre_setted_parameters = {'page': page, 'sort': 'relevance'}
+            setted_parameters = {}
+
+            if keyword:
+                setted_parameters.update({'keyword': keyword})
+
+            if location:
+                setted_parameters.update({'location': location})
+
             response = requests.get(
                 url=self.url,
                 params={
-                    'page': page,
-                    'sort': 'relevance',
-                    'keyword': keyword,
-                    'location': location
+                    **pre_setted_parameters,
+                    **setted_parameters
                 }
             ).json()
 
