@@ -1,5 +1,3 @@
-import requests
-import dateutil.parser as date_parser
 from databases.orm import ORM
 from selenium.webdriver.common.by import By
 
@@ -27,8 +25,9 @@ class Oikotie(ParserBase):
             keyword = f'&hakusana={",".join(keyword)}'
 
         url = (
-           f'https://tyopaikat.oikotie.fi/tyopaikat{location}?jarjestys=uusimmat{keyword}'
+           f'https://tyopaikat.oikotie.fi/tyopaikat/{location}?jarjestys=uusimmat{keyword}'
         )
+        print(url)
 
         driver.get(url=url)
         time.sleep(2)
@@ -73,5 +72,5 @@ class Oikotie(ParserBase):
 
         description = driver.find_element(By.CLASS_NAME, 'wysiwyg-container').text
 
-        return description.strip()[:50] + "..."
+        return description.strip()[:400] + "..."
 
