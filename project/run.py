@@ -17,7 +17,7 @@ def parse_oikotie(keyword: list = '', location: str = ''):
 
 def parse_eezy(keyword='', location=''):
     eezy = Eezy()
-    eezy.parse_by_selenium(keyword=keyword, location=location)
+    eezy.parse_by_bs4(keyword=keyword, location=location)
 
 
 def parse_barona(keyword=None, location=None):
@@ -25,7 +25,7 @@ def parse_barona(keyword=None, location=None):
     barona_parser.parse(keyword=keyword, location=location)
 
 
-def main(keyword='', location=None):
+def main(keyword='', location=''):
 
     db.create_tables()
 
