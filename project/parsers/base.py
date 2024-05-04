@@ -59,12 +59,12 @@ class ParserBase:
         driver = undetected_chromedriver.Chrome(
             driver_executable_path=self.__driver_path,
             options=options,
-            seleniumwire_options=proxy
+            # seleniumwire_options=proxy
         )
 
         return driver
 
-    def get_description(self, driver: undetected_chromedriver.Chrome, link=str):
+    def get_description(self, driver: undetected_chromedriver.Chrome, link: str):
         pass
 
 
