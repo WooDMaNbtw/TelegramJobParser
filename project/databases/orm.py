@@ -14,7 +14,7 @@ class ORM:
     }
 
     def __init__(self, path):
-        self.conn = sq.connect(path, check_same_thread=False)
+        self.conn = sq.connect(path, check_same_thread=False, timeout=20)
         self.cursor = self.conn.cursor()
 
     def show_data(self, table):
@@ -48,7 +48,7 @@ class ORM:
             user_id TEXT,
             barona_id INTEGER DEFAULT 0,
             eezy_id INTEGER DEFAULT 0,
-            oikotie_id INTEGER DEFAULT 0,
+            oikotie_id INTEGER DEFAULT 0
             )'''
         )
 
@@ -67,9 +67,9 @@ class ORM:
         rows = self.cursor.execute(f'SELECT * FROM {table} WHERE slug=(?)', (slug, )).fetchall()
 
         if len(rows) != 0:
-            #  return False if vacacancy already exists in database
+            #  return False if vacancy already exists in database
             return False
-        print(locations)
+
         if locations is not None:
             try:
                 locations = ", ".join([location["city"] for location in locations])
@@ -92,18 +92,6 @@ class ORM:
         )
         self.conn.commit()
 
-        #  sending to the telegram new vacancy
-        #  ...
-        displayed_data = {
-            'service': table,
-            'title': title,
-            'link': link,
-            'locations': locations,
-            'description': description,
-            'language': language
-        }
-
-        temp_vacancies.update({slug: displayed_data})
         return None
 
     def save_user(self, user_id):
@@ -113,8 +101,9 @@ class ORM:
             return
 
         self.cursor.execute("INSERT INTO users (user_id) VALUES (?)", (user_id, ))
+        self.conn.commit()
 
-    def update_user(self, user_id, barona_id=None, eezy_id=None, oikoie_id=None):
+    def update_user(self, user_id, barona_id=None, eezy_id=None, oikotie_id=None):
         query = "UPDATE users SET "
         sets = []
 
@@ -124,8 +113,8 @@ class ORM:
         if eezy_id is not None:
             sets.append(f"eezy_id = {eezy_id}")
 
-        if oikoie_id is not None:
-            sets.append(f"oikoie_id = {oikoie_id}")
+        if oikotie_id is not None:
+            sets.append(f"oikotie_id = {oikotie_id}")
 
         if sets:
             query += ", ".join(sets) + f" WHERE user_id = {user_id}"
@@ -146,19 +135,47 @@ class ORM:
             json.dump(temp_vacancies, fp=file, indent=4, ensure_ascii=False)
 
     def get_relevant_records(self, user_id):
-        barona_last_viewed_record = self.cursor.execute("SELECT barona_id FROM users WHERE user_id = (?)", (user_id, )).fetchone()
-        eezy_last_viewed_record = self.cursor.execute("SELECT eezy_id FROM users WHERE user_id = (?)", (user_id, )).fetchone()
-        oikotie_last_viewed_record = self.cursor.execute("SELECT oikotie FROM users WHERE user_id = (?)", (user_id, )).fetchone()
 
-        barona_rows = self.cursor.execute("SELECT * FROM barona WHERE id >= (?)", (barona_last_viewed_record, )).fetchall()
-        eezy_rows = self.cursor.execute("SELECT * FROM eezy WHERE id >= (?)", (eezy_last_viewed_record, )).fetchall()
-        oikotie_rows = self.cursor.execute("SELECT * FROM oikotie WHERE id >= (?)", (oikotie_last_viewed_record, )).fetchall()
+        query = "SELECT barona_id, eezy_id, oikotie_id FROM users WHERE user_id = (?)"
+        last_viewed_records = self.cursor.execute(query, (user_id,)).fetchone()
+
+        (barona_last_viewed_record,
+         eezy_last_viewed_record,
+         oikotie_last_viewed_record) = last_viewed_records
+
+        barona_rows = self.cursor.execute(
+            "SELECT * FROM barona WHERE id > (?)",
+            (barona_last_viewed_record,)
+        ).fetchall()
+        eezy_rows = self.cursor.execute(
+            "SELECT * FROM eezy WHERE id > (?)",
+            (eezy_last_viewed_record,)
+        ).fetchall()
+        oikotie_rows = self.cursor.execute(
+            "SELECT * FROM oikotie WHERE id > (?)",
+            (oikotie_last_viewed_record,)
+        ).fetchall()
 
         self.update_user(
             user_id=user_id,
-            barona_id=barona_rows[-1][-1],
-            eezy_id=eezy_rows[-1][-1],
-            oikoie_id=oikotie_rows[-1][-1]
+            barona_id=barona_rows[-1][0] if barona_rows else barona_last_viewed_record,
+            eezy_id=eezy_rows[-1][0] if eezy_rows else eezy_last_viewed_record,
+            oikotie_id=oikotie_rows[-1][0] if oikotie_rows else oikotie_last_viewed_record
         )
 
+        '''
+        ---Returned structure---
+        id
+        posted
+        slug
+        title
+        link
+        locations
+        deadline
+        desc
+        employment type
+        lang
+        '''
+
         return barona_rows + eezy_rows + oikotie_rows
+
