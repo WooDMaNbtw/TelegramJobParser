@@ -1,8 +1,12 @@
 import selenium.common
 from databases.orm import ORM
+from selenium.common import NoSuchElementException, StaleElementReferenceException
+from selenium.webdriver.support.wait import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 from .base import ParserBase
-import undetected_chromedriver
+import warnings
 import time
+from bs4 import BeautifulSoup
 from selenium.webdriver.common.by import By
 
 
@@ -13,54 +17,94 @@ class Eezy(ParserBase):
         self.url = url
         self.orm = ORM('databases/database.db')
 
-    def accept_cookies(self, driver: undetected_chromedriver.Chrome):
+    def accept_cookies(self, driver):
         try:
-            cookies = (driver
-                .find_element(
-                    By.CLASS_NAME,
-                    'ch2-dialog-actions')
-                .find_element(
-                    By.CLASS_NAME,
-                    'ch2-deny-all-btn')
-            )
+            cookies = driver.find_element(By.CLASS_NAME, 'ch2-deny-all-btn')
             cookies.click()
-        except selenium.common.NoSuchElementException:
+        except selenium.common.exceptions.NoSuchElementException:
             pass
 
     def parse_by_selenium(self, keyword='', location=''):
-        driver: undetected_chromedriver.Chrome = self.get_driver()
+        warnings.warn("This function is deprecated.", DeprecationWarning)
+
+        driver = self.get_driver()
+        driver.get(url=f"{self.url}?job={keyword}&location={location}")
+
+        self.accept_cookies(driver)
+
+        WebDriverWait(driver, 10).until(
+            EC.presence_of_element_located((By.CLASS_NAME, 'css-1u0wjtf'))
+        )
+
+        content_block = driver.find_element(By.CLASS_NAME, 'css-1u0wjtf')
+        show_more_buttons = driver.find_elements(By.CLASS_NAME, 'css-17kp6u6')
+
+        for button in show_more_buttons:
+            button.click()
+            time.sleep(1)
+
+        vacancies = content_block.find_elements(By.CLASS_NAME, 'css-7x9j97')
+
+        if len(vacancies) == 0:
+            raise Exception("Vacancies weren't found")
+
+        for i, vacancy in enumerate(vacancies):
+            print(vacancy.text + "\n")
+
+            try:
+                link = vacancy.find_element(By.TAG_NAME, 'a').get_attribute('href')
+                title = vacancy.find_element(By.CLASS_NAME, 'css-x9gms1').text
+                location = vacancy.find_element(By.CLASS_NAME, 'css-1o7vf0g').text
+                description = self.get_description(driver, link)
+                self.orm.save_vacancy(
+                    table=Eezy.__name__,
+                    slug=link.replace('https://tyopaikat.eezy.fi', ''),
+                    title=title,
+                    description=description,
+                    locations={"location": location}
+                )
+            except (NoSuchElementException, StaleElementReferenceException) as ex:
+                print("Error processing vacancy:", ex)
+
+    def get_description(self, driver, link):
+        driver.get(link)
+        description_element = WebDriverWait(driver, 10).until(
+            EC.presence_of_element_located((By.CLASS_NAME, 'css-aofzs'))
+        )
+        description = description_element.find_element(By.CLASS_NAME, 'css-4cffwv').text
+        return description.strip()[:400] + "..."
+
+    def parse_by_bs4(self, keyword="", location=""):
+        driver = self.get_driver()
 
         driver.get(url=f"{self.url}?job={keyword}&location={location}")
 
         self.accept_cookies(driver=driver)
 
-        content_block = driver.find_element(By.CLASS_NAME, 'css-1u0wjtf')
+        time.sleep(3)
+
+        WebDriverWait(driver, 10).until(
+            EC.presence_of_element_located((By.CLASS_NAME, 'css-1u0wjtf'))
+        )
 
         while True:
             try:
+                driver.find_element(By.CLASS_NAME, 'css-17kp6u6').click()
                 time.sleep(1)
-                show_more = driver.find_element(By.CLASS_NAME, 'css-17kp6u6')
-                show_more.click()
-            except Exception as ex:
+            except NoSuchElementException:
                 break
 
-        vacancies = content_block.find_elements(By.CLASS_NAME, 'css-7x9j97')
+        soup = BeautifulSoup(driver.page_source, "lxml")
+
+        vacancies = soup.find_all("div", class_="css-7x9j97")
 
         for vacancy in vacancies:
-            try:
-                link = vacancy.find_element(By.TAG_NAME, 'a').get_attribute('href')
-                slug = link.replace('https://tyopaikat.eezy.fi', '')
-            except Exception as ex:
-                link = None
-                slug = None
-
-            title = vacancy.find_element(By.CLASS_NAME, 'css-x9gms1').text
+            slug = vacancy.find("a").get("href")
+            link = f"https://tyopaikat.eezy.fi{slug}"
+            title = vacancy.find("div", class_='css-x9gms1').text
+            location = vacancy.find("div", class_="css-1o7vf0g").text if vacancy.find("div",
+                                                                                      class_="css-1o7vf0g") else None
             description = self.get_description(driver=driver, link=link)
-
-            try:
-                location = vacancy.find_element(By.CLASS_NAME, 'css-1o7vf0g').text
-            except selenium.common.StaleElementReferenceException as ex:
-                print("location wasn't found")
 
             self.orm.save_vacancy(
                 table=Eezy.__name__,
@@ -70,12 +114,6 @@ class Eezy(ParserBase):
                 locations={"location": location}
             )
 
-    def get_description(self, driver: undetected_chromedriver.Chrome, link=str):
-        if link is None:
-            return ''
+        driver.close()
+        driver.quit()
 
-        driver.get(link)
-
-        description = driver.find_element(By.CLASS_NAME, 'css-4cffwv').text
-
-        return description.strip()[:50] + "..."
