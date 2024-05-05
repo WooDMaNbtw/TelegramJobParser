@@ -2,7 +2,7 @@ import os, asyncio, logging
 from aiogram import Dispatcher, Bot
 from aiogram.types import BotCommand
 from assets import TG_API_BOT
-from run import main
+from run import main, db
 
 token: str = TG_API_BOT
 bot = Bot(token=token)
@@ -22,9 +22,11 @@ bot_rad = Bot(token='6795556806:AAGKyNG7T7BM1m42WGnqUZgyKvSzigugR0c')
 bot_sales = Bot(token='6795556806:AAGKyNG7T7BM1m42WGnqUZgyKvSzigugR0c')
 
 from telegram_bot import KanzuBot, Bot
+from telegram_bot.Bot import CUR_DICT_LANG
 
 
 async def runner() -> None:
+
     tasks = [
         # asyncio.create_task(KanzuBot.main_starter()),
         asyncio.create_task(Bot.main_starter()),
@@ -35,9 +37,9 @@ async def runner() -> None:
     commands = [
         BotCommand(command='/start', description='Menu'),
         BotCommand(command='/help', description='Help'),
-        BotCommand(command='/info', description='info'),
+        BotCommand(command='/info', description='Info'),
         BotCommand(command='/settings', description='Settings'),
-        # BotCommand(command='/select_vacancies', description='Настройки')
+        BotCommand(command='/about', description='About'),
     ]
     await bot.set_my_commands(
         commands=commands
