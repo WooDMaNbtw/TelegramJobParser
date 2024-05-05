@@ -48,7 +48,8 @@ class ORM:
             user_id TEXT,
             barona_id INTEGER DEFAULT 0,
             eezy_id INTEGER DEFAULT 0,
-            oikotie_id INTEGER DEFAULT 0
+            oikotie_id INTEGER DEFAULT 0,
+            language TEXT DEFAULT 'en'
             )'''
         )
 
@@ -129,10 +130,13 @@ class ORM:
         self.cursor.execute(f'DELETE FROM {table} WHERE deadline < (?)', (datetime.date.today(), ))
         self.conn.commit()
 
-    @staticmethod
-    def save_temp_vacancies():
-        with open('new_temp_vacancies.json', 'w') as file:
-            json.dump(temp_vacancies, fp=file, indent=4, ensure_ascii=False)
+    def set_user_language(self, user_id, language):
+        self.cursor.execute('UPDATE users SET language = (?) WHERE user_id = (?)', (language, user_id))
+        self.conn.commit()
+
+    def get_user_language(self, user_id):
+        option = self.cursor.execute('SELECT language FROM users WHERE user_id = (?)', (user_id, )).fetchone()
+        return option[0]
 
     def get_relevant_records(self, user_id):
 
