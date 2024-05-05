@@ -27,7 +27,6 @@ class Oikotie(ParserBase):
         url = (
            f'https://tyopaikat.oikotie.fi/tyopaikat/{location}?jarjestys=uusimmat{keyword}'
         )
-        print(url)
 
         driver.get(url=url)
         time.sleep(2)
