@@ -47,7 +47,6 @@ def main(keyword='', location=''):
     barona_thread.join()
 
     end_time = datetime.datetime.now()
-    ORM.save_temp_vacancies()
 
     print("Overall time: ", end_time - start_time)
 
