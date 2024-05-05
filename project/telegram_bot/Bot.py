@@ -2,10 +2,7 @@ import asyncio
 import json
 from string import punctuation
 from typing import Union
-
-import aiogram
 from aiogram import Router, F, Bot, Dispatcher
-from aiogram.exceptions import TelegramBadRequest
 from aiogram.filters import Command
 from aiogram.types import CallbackQuery, Message, InlineKeyboardButton, ReplyKeyboardMarkup, KeyboardButton
 from aiogram.utils.keyboard import InlineKeyboardBuilder
@@ -19,32 +16,50 @@ tracking_event = asyncio.Event()
 tracking_event.clear()
 
 
+with open("telegram_bot/languages/langs.json", "r") as file:
+    CUR_DICT_LANG: dict = json.load(fp=file)
+
+
 @router.message(Command("start"))
 @router.callback_query(F.data == "start")
 async def start(msg: Union[Message, CallbackQuery]):
+    global CUR_DICT_LANG
+    db.save_user(msg.from_user.id)
+
+    language: str = db.get_user_language(user_id=msg.from_user.id)
+
     """
-    represents a start bot function
+    represents a start bot function which outputs buttons menu
     :param msg: Message
     :return: Doesn't return any values
     """
 
-    text = '''
-ℹ️ Kanzu Navigation📌
-    
-Please select option in which you are interested
-    '''
+    text = CUR_DICT_LANG['start_menu_text'][language]
 
     parsed_text = await reply_parse(text)
 
-    db.save_user(msg.from_user.id)
-
     builder = InlineKeyboardBuilder()
 
-    builder.row(InlineKeyboardButton(text='To vacancies', callback_data=f"prepare_vacancies"))
-    builder.row(InlineKeyboardButton(text='About service', callback_data='info'))
-    builder.add(InlineKeyboardButton(text="Support", callback_data='help'))
-    builder.row(InlineKeyboardButton(text='More our services', callback_data='services'))
-    builder.add(InlineKeyboardButton(text='Settings', callback_data='settings'))
+    builder.row(InlineKeyboardButton(
+        text=CUR_DICT_LANG['start_menu_buttons_text']['to_vacancies'][language],
+        callback_data=f"prepare_vacancies")
+    )
+    builder.row(InlineKeyboardButton(
+        text=CUR_DICT_LANG['start_menu_buttons_text']['about'][language],
+        callback_data='info')
+    )
+    builder.add(InlineKeyboardButton(
+        text=CUR_DICT_LANG['start_menu_buttons_text']['support'][language],
+        callback_data='help')
+    )
+    builder.row(InlineKeyboardButton(
+        text=CUR_DICT_LANG['start_menu_buttons_text']['more'][language],
+        callback_data='services')
+    )
+    builder.add(InlineKeyboardButton(
+        text=CUR_DICT_LANG['start_menu_buttons_text']['settings'][language],
+        callback_data='settings'
+    ))
 
     answer_method = msg if isinstance(msg, Message) else msg.message
 
@@ -59,21 +74,28 @@ Please select option in which you are interested
 
 @router.callback_query(F.data == "prepare_vacancies")
 async def prepare_vacancies(clb: CallbackQuery):
+    language: str = db.get_user_language(user_id=clb.from_user.id)
+
     keyboard = ReplyKeyboardMarkup(
         keyboard=[
-            [KeyboardButton(text="Start tracking vacancies")],
+            [KeyboardButton(text=CUR_DICT_LANG['vacancies_start_prepare_tracking_text'][language])],
         ],
         resize_keyboard=True,
     )
 
     await clb.message.answer(
-        text="Please submit the keyboard button to start tracking relevant vacancies",
+        text=CUR_DICT_LANG['prepare_vacancies_text'][language],
         reply_markup=keyboard
     )
 
 
-@router.message(F.text == "Start tracking vacancies")
-@router.message(F.text == "Stop tracking vacancies")
+#  Current syntax is not clearly readable
+@router.message(F.text == 'Start tracking vacancies')
+@router.message(F.text == 'Начать отслеживание вакансий')
+@router.message(F.text == 'Aloita työpaikkojen seuranta')
+@router.message(F.text == 'Stop tracking vacancies')
+@router.message(F.text == 'Прекратить отслеживание вакансий')
+@router.message(F.text == 'Lopeta työpaikkojen seuranta')
 async def vacancies(msg: Message):
     """
     Main method which requests the vacancies and responses to the user
@@ -81,10 +103,11 @@ async def vacancies(msg: Message):
     :param msg:
     :return: Doesn't return anything
     """
+    language: str = db.get_user_language(user_id=msg.from_user.id)
 
     ''' User option part '''
     global tracking_event
-    if msg.text == "Start tracking vacancies":
+    if msg.text == CUR_DICT_LANG['vacancies_start_prepare_tracking_text'][language]:
         tracking_event.set()
     else:
         tracking_event.clear()
@@ -93,25 +116,20 @@ async def vacancies(msg: Message):
 
     if not option:
         await msg.answer(
-            text="🛑 Tracking successfully stopped.",
+            text=CUR_DICT_LANG['vacancies_stopped_tracking_text'][language],
         )
         return await start(msg=msg)
 
     ''' Informative part message '''
     keyboard = ReplyKeyboardMarkup(
         keyboard=[
-            [KeyboardButton(text="Stop tracking vacancies")],
+            [KeyboardButton(text=CUR_DICT_LANG['vacancies_stop_prepare_tracking_text'][language])],
         ],
         resize_keyboard=True,
         one_time_keyboard=True
     )
     informative_message = await msg.answer(
-        text='''
-✅ Tracking started successfully, 
-
-⚠️ Please be aware that vacancies won't be showed too often. 
-The reason is that our service tracks vacancies from other websites and depends on them
-    ''',
+        text=CUR_DICT_LANG['vacancies_started_tracking_text'][language],
         reply_markup=keyboard
     )
     await informative_message.pin()
@@ -155,14 +173,25 @@ async def settings(msg: Union[Message, CallbackQuery]):
 
     :return:
     """
+    language: str = db.get_user_language(user_id=msg.from_user.id)
+
+    text = CUR_DICT_LANG['settings_text'][language]
+
+    parsed_text = await reply_parse(text)
 
     builder = InlineKeyboardBuilder()
-    builder.row(InlineKeyboardButton(text="To main menu", callback_data="start"))
+    builder.row(InlineKeyboardButton(text='Finnish', callback_data='set_finnish_lang'))
+    builder.row(InlineKeyboardButton(text='English', callback_data='set_english_lang'))
+    builder.row(InlineKeyboardButton(text='Русский', callback_data='set_russian_lang'))
+    builder.row(InlineKeyboardButton(
+        text=CUR_DICT_LANG['command_start_text'][language],
+        callback_data="start")
+    )
 
     answer_method = msg if isinstance(msg, Message) else msg.message
     await answer_method.delete()
     await answer_method.answer(
-        text="Settings",
+        text=parsed_text,
         reply_markup=builder.as_markup(),
         parse_mode="MarkdownV2"
     )
@@ -179,24 +208,14 @@ async def help(msg: Union[Message, CallbackQuery]):
 
     Text: example
     """
+    language: str = db.get_user_language(user_id=msg.from_user.id)
 
-    text = '''
-❓ Kanzu Support ❓
-
-If you encountered any difficulties with our service, you can reach out to our managers via their Telegram profiles below:
-
-1st manager: @SkyFyFamily
-2nd manager: @woodmanbtw
-
-⚠️ Please remember to be kind and observe the rules of decency while contacting our managers.
-
-⚠️ Please note that due to a large number of requests, response times may take up to 24 hours.
-    '''
+    text = CUR_DICT_LANG['help_text'][language]
 
     parsed_text = await reply_parse(text)
 
     builder = InlineKeyboardBuilder()
-    builder.row(InlineKeyboardButton(text="To main menu", callback_data="start"))
+    builder.row(InlineKeyboardButton(text=CUR_DICT_LANG['general_to_menu_text'][language], callback_data="start"))
 
     answer_method = msg if isinstance(msg, Message) else msg.message
     await answer_method.delete()
@@ -217,27 +236,14 @@ async def info(msg: Union[Message, CallbackQuery]):
 
     :return: It doesn't return any values, but texts to user such text:
     """
+    language: str = db.get_user_language(user_id=msg.from_user.id)
 
-    text = '''
-ℹ️ About Our Service:
-
-🔄 Every day, KanzuBot monitors numerous vacancies from the following websites:
-
-- Barona
-- Oikotie
-- Eezy
-
-Accordingly, it sends you relevant vacancies tailored to your skills and preferences.
-
-✅ What Our Clients Receive:
-A consistent monthly stream of hot leads actively searching for specialists like you.
-
-    '''
+    text = CUR_DICT_LANG['info_text'][language]
 
     parsed_text = await reply_parse(text)
 
     builder = InlineKeyboardBuilder()
-    builder.row(InlineKeyboardButton(text="To main menu", callback_data="start"))
+    builder.row(InlineKeyboardButton(text=CUR_DICT_LANG['general_to_menu_text'][language], callback_data="start"))
 
     answer_method = msg if isinstance(msg, Message) else msg.message
     await answer_method.delete()
@@ -248,13 +254,42 @@ A consistent monthly stream of hot leads actively searching for specialists like
     )
 
 
+@router.callback_query(F.data == "set_russian_lang")
+async def set_russian_lang(clb: CallbackQuery):
+    db.set_user_language(user_id=clb.from_user.id, language='ru')
+    return await start(msg=clb)
+
+
+@router.callback_query(F.data == "set_english_lang")
+async def set_english_lang(clb: CallbackQuery):
+    db.set_user_language(user_id=clb.from_user.id, language='en')
+    return await start(msg=clb)
+
+
+@router.callback_query(F.data == "set_finnish_lang")
+async def set_finnish_lang(clb: CallbackQuery):
+    db.set_user_language(user_id=clb.from_user.id, language='fi')
+    return await start(msg=clb)
+
+
 async def main_starter():
+    """
+    Works as a main starter function
+
+    :return: Doesn't return anything
+    """
     db.create_tables()
     dp.include_router(router)
     await dp.start_polling(bot)
 
 
 async def reply_parse(replied_message: str) -> str:
+    """
+    Modifies given text into parsed text, using \\
+
+    :param replied_message:
+    :return: modified text
+    """
     modified_text = ""
     for char in replied_message:
         if char in punctuation and char not in "`*_":
