@@ -18,7 +18,7 @@ class ParserBase:
         if platform.system() == 'Windows':
             self.__driver_path = 'chromedrivers/windows/chromedriver'
         else:
-            self.__driver_path = 'chromedrivers/linux/chromedriver'
+            self.__driver_path = 'chromedrivers/linux/version_125/chromedriver'
 
     def __get_proxy(self) -> Optional[dict]:
         if not self.__proxy_login and not self.__proxy_password:
