@@ -10,41 +10,45 @@ from databases.orm import ORM
 db = ORM('databases/database.db')
 
 
-def parse_oikotie(keyword: list = '', location: str = ''):
+async def parse_oikotie(keyword: list = '', location: str = ''):
     oikotie = Oikotie()
-    oikotie.parse_by_selenium(keyword=keyword, location=location)
+    await oikotie.parse_by_selenium(keyword=keyword, location=location)
 
 
-def parse_eezy(keyword='', location=''):
+async def parse_eezy(keyword='', location=''):
     eezy = Eezy()
-    eezy.parse_by_bs4(keyword=keyword, location=location)
+    await eezy.parse_by_bs4(keyword=keyword, location=location)
 
 
-def parse_barona(keyword=None, location=None):
+async def parse_barona(keyword=None, location=None):
     barona_parser = Barona()
-    barona_parser.parse(keyword=keyword, location=location)
+    await barona_parser.parse(keyword=keyword, location=location)
 
 
-def main(keyword='', location=''):
+async def main(keyword='', location=''):
 
-    db.create_tables()
+    await db.create_tables()
 
     start_time = datetime.datetime.now()
 
-    # Создание и запуск потоков
-    oikotie_thread = threading.Thread(target=parse_oikotie,
-                                      args=(keyword, location))
-    eezy_thread = threading.Thread(target=parse_eezy, args=(keyword, location))
-    barona_thread = threading.Thread(target=parse_barona, args=(keyword, location))
+    await parse_barona()
+    await parse_eezy()
+    await parse_oikotie()
 
-    oikotie_thread.start()
-    eezy_thread.start()
-    barona_thread.start()
-
-    # Ожидание завершения потоков
-    oikotie_thread.join()
-    eezy_thread.join()
-    barona_thread.join()
+    # # Создание и запуск потоков
+    # oikotie_thread = threading.Thread(target=parse_oikotie,
+    #                                   args=(keyword, location))
+    # eezy_thread = threading.Thread(target=parse_eezy, args=(keyword, location))
+    # barona_thread = threading.Thread(target=parse_barona, args=(keyword, location))
+    #
+    # oikotie_thread.start()
+    # eezy_thread.start()
+    # barona_thread.start()
+    #
+    # # Ожидание завершения потоков
+    # oikotie_thread.join()
+    # eezy_thread.join()
+    # barona_thread.join()
 
     end_time = datetime.datetime.now()
 

@@ -17,20 +17,20 @@ class Eezy(ParserBase):
         self.url = url
         self.orm = ORM('databases/database.db')
 
-    def accept_cookies(self, driver):
+    async def accept_cookies(self, driver):
         try:
             cookies = driver.find_element(By.CLASS_NAME, 'ch2-deny-all-btn')
             cookies.click()
         except selenium.common.exceptions.NoSuchElementException:
             pass
 
-    def parse_by_selenium(self, keyword='', location=''):
+    async def parse_by_selenium(self, keyword='', location=''):
         warnings.warn("This function is deprecated.", DeprecationWarning)
 
-        driver = self.get_driver()
+        driver = await self.get_driver()
         driver.get(url=f"{self.url}?job={keyword}&location={location}")
 
-        self.accept_cookies(driver)
+        await self.accept_cookies(driver)
 
         WebDriverWait(driver, 10).until(
             EC.presence_of_element_located((By.CLASS_NAME, 'css-1u0wjtf'))
@@ -66,7 +66,7 @@ class Eezy(ParserBase):
             except (NoSuchElementException, StaleElementReferenceException) as ex:
                 print("Error processing vacancy:", ex)
 
-    def get_description(self, driver, link):
+    async def get_description(self, driver, link):
         driver.get(link)
         description_element = WebDriverWait(driver, 10).until(
             EC.presence_of_element_located((By.CLASS_NAME, 'css-aofzs'))
@@ -74,12 +74,12 @@ class Eezy(ParserBase):
         description = description_element.find_element(By.CLASS_NAME, 'css-4cffwv').text
         return description.strip()[:400] + "..."
 
-    def parse_by_bs4(self, keyword="", location=""):
-        driver = self.get_driver()
+    async def parse_by_bs4(self, keyword="", location=""):
+        driver = await self.get_driver()
 
         driver.get(url=f"{self.url}?job={keyword}&location={location}")
 
-        self.accept_cookies(driver=driver)
+        await self.accept_cookies(driver=driver)
 
         time.sleep(3)
 
@@ -104,9 +104,9 @@ class Eezy(ParserBase):
             title = vacancy.find("div", class_='css-x9gms1').text
             location = vacancy.find("div", class_="css-1o7vf0g").text if vacancy.find("div",
                                                                                       class_="css-1o7vf0g") else None
-            description = self.get_description(driver=driver, link=link)
+            description = await self.get_description(driver=driver, link=link)
 
-            self.orm.save_vacancy(
+            await self.orm.save_vacancy(
                 table=Eezy.__name__,
                 slug=slug,
                 title=title,

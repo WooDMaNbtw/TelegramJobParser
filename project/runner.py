@@ -22,7 +22,6 @@ bot_rad = Bot(token='6795556806:AAGKyNG7T7BM1m42WGnqUZgyKvSzigugR0c')
 bot_sales = Bot(token='6795556806:AAGKyNG7T7BM1m42WGnqUZgyKvSzigugR0c')
 
 from telegram_bot import KanzuBot, Bot
-from telegram_bot.Bot import CUR_DICT_LANG
 
 
 async def runner() -> None:

@@ -24,9 +24,9 @@ with open("telegram_bot/languages/langs.json", "r") as file:
 @router.callback_query(F.data == "start")
 async def start(msg: Union[Message, CallbackQuery]):
     global CUR_DICT_LANG
-    db.save_user(msg.from_user.id)
+    await db.save_user(msg.from_user.id)
 
-    language: str = db.get_user_language(user_id=msg.from_user.id)
+    language: str = await db.get_user_language(user_id=msg.from_user.id)
 
     """
     represents a start bot function which outputs buttons menu
@@ -74,7 +74,7 @@ async def start(msg: Union[Message, CallbackQuery]):
 
 @router.callback_query(F.data == "prepare_vacancies")
 async def prepare_vacancies(clb: CallbackQuery):
-    language: str = db.get_user_language(user_id=clb.from_user.id)
+    language: str = await db.get_user_language(user_id=clb.from_user.id)
 
     keyboard = ReplyKeyboardMarkup(
         keyboard=[
@@ -103,7 +103,7 @@ async def vacancies(msg: Message):
     :param msg:
     :return: Doesn't return anything
     """
-    language: str = db.get_user_language(user_id=msg.from_user.id)
+    language: str = await db.get_user_language(user_id=msg.from_user.id)
 
     ''' User option part '''
     global tracking_event
@@ -135,9 +135,9 @@ async def vacancies(msg: Message):
     await informative_message.pin()
 
     while True:
-        main()
+        await main()
 
-        items_list: list = db.get_relevant_records(user_id=msg.from_user.id)
+        items_list: list = await db.get_relevant_records(user_id=msg.from_user.id)
 
         items_list = items_list[-10:]
 
@@ -173,7 +173,7 @@ async def settings(msg: Union[Message, CallbackQuery]):
 
     :return:
     """
-    language: str = db.get_user_language(user_id=msg.from_user.id)
+    language: str = await db.get_user_language(user_id=msg.from_user.id)
 
     text = CUR_DICT_LANG['settings_text'][language]
 
@@ -208,7 +208,7 @@ async def help(msg: Union[Message, CallbackQuery]):
 
     Text: example
     """
-    language: str = db.get_user_language(user_id=msg.from_user.id)
+    language: str = await db.get_user_language(user_id=msg.from_user.id)
 
     text = CUR_DICT_LANG['help_text'][language]
 
@@ -236,7 +236,7 @@ async def info(msg: Union[Message, CallbackQuery]):
 
     :return: It doesn't return any values, but texts to user such text:
     """
-    language: str = db.get_user_language(user_id=msg.from_user.id)
+    language: str = await db.get_user_language(user_id=msg.from_user.id)
 
     text = CUR_DICT_LANG['info_text'][language]
 
@@ -256,19 +256,19 @@ async def info(msg: Union[Message, CallbackQuery]):
 
 @router.callback_query(F.data == "set_russian_lang")
 async def set_russian_lang(clb: CallbackQuery):
-    db.set_user_language(user_id=clb.from_user.id, language='ru')
+    await db.set_user_language(user_id=clb.from_user.id, language='ru')
     return await start(msg=clb)
 
 
 @router.callback_query(F.data == "set_english_lang")
 async def set_english_lang(clb: CallbackQuery):
-    db.set_user_language(user_id=clb.from_user.id, language='en')
+    await db.set_user_language(user_id=clb.from_user.id, language='en')
     return await start(msg=clb)
 
 
 @router.callback_query(F.data == "set_finnish_lang")
 async def set_finnish_lang(clb: CallbackQuery):
-    db.set_user_language(user_id=clb.from_user.id, language='fi')
+    await db.set_user_language(user_id=clb.from_user.id, language='fi')
     return await start(msg=clb)
 
 
@@ -278,7 +278,7 @@ async def main_starter():
 
     :return: Doesn't return anything
     """
-    db.create_tables()
+    await db.create_tables()
     dp.include_router(router)
     await dp.start_polling(bot)
 

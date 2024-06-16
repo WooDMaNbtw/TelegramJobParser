@@ -11,9 +11,9 @@ class Barona(ParserBase):
         self.url = url
         self.orm = ORM('databases/database.db')
 
-    def parse(self, keyword=None, location=None) -> None:
-        self.orm.clear_old_records(table=Barona.__name__)
-        total_pages = self.get_total_pages()
+    async def parse(self, keyword=None, location=None) -> None:
+        await self.orm.clear_old_records(table=Barona.__name__)
+        total_pages = await self.get_total_pages()
         for page in range(1, total_pages + 1):
 
             pre_setted_parameters = {'page': page, 'sort': 'relevance'}
@@ -46,7 +46,7 @@ class Barona(ParserBase):
                 deadline = date_parser.isoparse(vacancy.get('validThrough')).date()
                 locations = vacancy.get('location')
 
-                self.orm.save_vacancy(
+                await self.orm.save_vacancy(
                     table=Barona.__name__,
                     posted_at=posted,
                     slug=slug,
@@ -58,7 +58,7 @@ class Barona(ParserBase):
                     language=language
                 )
 
-    def get_total_pages(self) -> int:
+    async def get_total_pages(self) -> int:
         response = requests.get(
             url=self.url
         ).json()

@@ -14,9 +14,9 @@ class Oikotie(ParserBase):
         super().__init__()
         self.orm = ORM('databases/database.db')
 
-    def parse_by_selenium(self, keyword: list = '', location: str = ''):
+    async def parse_by_selenium(self, keyword: list = '', location: str = ''):
 
-        driver: undetected_chromedriver.Chrome = self.get_driver()
+        driver: undetected_chromedriver.Chrome = await self.get_driver()
 
         if location:
             location = '/' + location
@@ -40,7 +40,7 @@ class Oikotie(ParserBase):
             title = body.find('h2').text.strip()
             slug = body.find('a').get('href')
             link = 'https://tyopaikat.oikotie.fi' + slug
-            description = self.get_description(driver=driver, link=link)
+            description = await self.get_description(driver=driver, link=link)
             try:
                 location = body.find('div', class_='locations').text.strip()
             except AttributeError as ex:
@@ -56,7 +56,7 @@ class Oikotie(ParserBase):
             except AttributeError as ex:
                 employment_types = None
 
-            self.orm.save_vacancy(
+            await self.orm.save_vacancy(
                 table=Oikotie.__name__,
                 title=title,
                 slug=slug,
@@ -66,7 +66,7 @@ class Oikotie(ParserBase):
                 posted_at=published
             )
 
-    def get_description(self, driver: undetected_chromedriver.Chrome, link=str):
+    async def get_description(self, driver: undetected_chromedriver.Chrome, link=str):
         driver.get(link)
 
         description = driver.find_element(By.CLASS_NAME, 'wysiwyg-container').text

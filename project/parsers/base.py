@@ -20,7 +20,7 @@ class ParserBase:
         else:
             self.__driver_path = 'chromedrivers/linux/version_125/chromedriver'
 
-    def __get_proxy(self) -> Optional[dict]:
+    async def __get_proxy(self) -> Optional[dict]:
         if not self.__proxy_login and not self.__proxy_password:
             return None
 
@@ -35,15 +35,15 @@ class ParserBase:
         }
         return proxy_options
 
-    def __get_random_user_agent(self) -> str:
+    async def __get_random_user_agent(self) -> str:
         with open(self.__agents_path, 'r') as file:
             user_agents = file.readlines()
             return random.choice(user_agents).strip()
 
-    def get_driver(self) -> undetected_chromedriver.Chrome:
+    async def get_driver(self) -> undetected_chromedriver.Chrome:
         options = ChromeOptions()
         options.add_argument("enable-automation")
-        options.add_argument("--headless")
+        # options.add_argument("--headless")
         options.add_argument("--window-size=1366,768")
         options.add_argument("--no-sandbox")
         options.add_argument("--disable-extensions")
@@ -52,10 +52,10 @@ class ParserBase:
         options.add_argument("--disable-gpu")
         options.add_argument('--blink-settings=imagesEnabled=false')
 
-        user_agent = self.__get_random_user_agent()
+        user_agent = await self.__get_random_user_agent()
         options.add_argument(f"--user-agent={user_agent}")
 
-        proxy = self.__get_proxy()
+        proxy = await self.__get_proxy()
         driver = undetected_chromedriver.Chrome(
             driver_executable_path=self.__driver_path,
             options=options,
