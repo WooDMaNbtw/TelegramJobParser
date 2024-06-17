@@ -22,13 +22,16 @@ bot_rad = Bot(token='6795556806:AAGKyNG7T7BM1m42WGnqUZgyKvSzigugR0c')
 bot_sales = Bot(token='6795556806:AAGKyNG7T7BM1m42WGnqUZgyKvSzigugR0c')
 
 from telegram_bot import KanzuBot, Bot
+from run import main
 
 
 async def runner() -> None:
+    await db.create_tables()
 
     tasks = [
         # asyncio.create_task(KanzuBot.main_starter()),
         asyncio.create_task(Bot.main_starter()),
+        asyncio.create_task(main())
     ]
 
     await asyncio.gather(*tasks)
@@ -47,7 +50,6 @@ async def runner() -> None:
 
 if __name__ == '__main__':
     log_dir = os.path.join(f"{os.path.dirname(__file__)}/telegram_bot", 'TelegramLogs')
-
     if not os.path.exists(log_dir):
         os.makedirs(log_dir)
 

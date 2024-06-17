@@ -1,3 +1,4 @@
+import asyncio
 import datetime
 import threading
 
@@ -27,13 +28,12 @@ async def parse_barona(keyword=None, location=None):
 
 async def main(keyword='', location=''):
 
-    await db.create_tables()
+    while True:
+        start_time = datetime.datetime.now()
 
-    start_time = datetime.datetime.now()
-
-    await parse_barona()
-    await parse_eezy()
-    await parse_oikotie()
+        await parse_barona()
+        await parse_eezy()
+        await parse_oikotie()
 
     # # Создание и запуск потоков
     # oikotie_thread = threading.Thread(target=parse_oikotie,
@@ -50,9 +50,11 @@ async def main(keyword='', location=''):
     # eezy_thread.join()
     # barona_thread.join()
 
-    end_time = datetime.datetime.now()
+        end_time = datetime.datetime.now()
 
-    print("Overall time: ", end_time - start_time)
+        print("Overall time: ", end_time - start_time)
+
+        await asyncio.sleep(60 * 10)
 
 
 if __name__ == "__main__":

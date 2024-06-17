@@ -1,5 +1,6 @@
 import asyncio
 import json
+import random
 from string import punctuation
 from typing import Union
 from aiogram import Router, F, Bot, Dispatcher
@@ -118,6 +119,7 @@ async def vacancies(msg: Message):
         await msg.answer(
             text=CUR_DICT_LANG['vacancies_stopped_tracking_text'][language],
         )
+        tracking_event.clear()
         return await start(msg=msg)
 
     ''' Informative part message '''
@@ -133,13 +135,11 @@ async def vacancies(msg: Message):
         reply_markup=keyboard
     )
     await informative_message.pin()
-
-    while True:
-        await main()
+    while option:
 
         items_list: list = await db.get_relevant_records(user_id=msg.from_user.id)
 
-        items_list = items_list[-10:]
+        items_list = items_list[-20:]
 
         for item in items_list:
             builder = InlineKeyboardBuilder()
@@ -157,9 +157,9 @@ async def vacancies(msg: Message):
                 reply_markup=builder.as_markup(),
             )
 
-            await asyncio.sleep(3)
+            await asyncio.sleep(random.randint(1, 30))
 
-        await asyncio.sleep(60 * 10)
+        await asyncio.sleep(60 * 12)
 
 
 @router.callback_query(F.data == "settings")
