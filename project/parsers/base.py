@@ -18,6 +18,7 @@ class ParserBase:
         if platform.system() == 'Windows':
             self.__driver_path = 'chromedrivers/windows/chromedriver'
         else:
+            self.__browser_path = 'chromedrivers/linux/version_125/chrome-linux64.zip'
             self.__driver_path = 'chromedrivers/linux/version_125/chromedriver'
 
     async def __get_proxy(self) -> Optional[dict]:
@@ -58,6 +59,7 @@ class ParserBase:
         proxy = await self.__get_proxy()
         driver = undetected_chromedriver.Chrome(
             driver_executable_path=self.__driver_path,
+            browser_executable_path=self.__browser_path,
             options=options,
             # seleniumwire_options=proxy
         )
