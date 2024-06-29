@@ -91,6 +91,8 @@ class ORM:
                 (posted_at, slug, title, link, locations, deadline, description, employment_types, language)
             )
             await conn.commit()
+
+            print(f"{title} SUCCESSFULLY SAVED")
         return None
 
     async def save_user(self, user_id):

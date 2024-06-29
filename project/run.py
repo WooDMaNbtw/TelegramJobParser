@@ -30,7 +30,7 @@ async def main(keyword='', location=''):
 
     while True:
         start_time = datetime.datetime.now()
-
+        print("PROCESS STARTED AT", datetime.datetime.now())
         await parse_barona()
         await parse_eezy()
         await parse_oikotie()
